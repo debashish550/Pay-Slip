@@ -1,0 +1,70 @@
+<dependencies>
+    <!-- Spring Boot Starter Web -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+
+    <!-- AWS SDK for Java -->
+    <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>s3</artifactId>
+    </dependency>
+</dependencies>
+aws.accessKeyId=YOUR_AWS_ACCESS_KEY
+aws.secretKey=YOUR_AWS_SECRET_KEY
+aws.region=YOUR_AWS_REGION
+aws.s3.bucketName=YOUR_S3_BUCKET_NAME
+perfios.api.baseUrl=PERFIOS_API_BASE_URL
+perfios.api.key=PERFIOS_API_KEY
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+
+@Service
+public class PayslipVerificationService {
+
+    @Autowired
+    private S3Client s3Client;
+
+    // Method to verify payslip authenticity
+    public boolean verifyPayslip(String payslipFileName) {
+        // Validate ownership and existence of the associate company (implement your logic)
+
+        // Retrieve payslip from S3 bucket
+        try {
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                    .bucket("YOUR_S3_BUCKET_NAME")
+                    .key(payslipFileName)
+                    .build();
+
+            s3Client.getObject(getObjectRequest);
+            // Payslip exists and is authentic
+            return true;
+        } catch (Exception e) {
+            // Payslip does not exist or there was an error
+            return false;
+        }
+    }
+}
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/payslip")
+public class PayslipVerificationController {
+
+    @Autowired
+    private PayslipVerificationService payslipVerificationService;
+
+    @PostMapping("/verify")
+    public String verifyPayslip(@RequestParam("filename") String payslipFileName) {
+        boolean isPayslipAuthentic = payslipVerificationService.verifyPayslip(payslipFileName);
+        if (isPayslipAuthentic) {
+            return "Payslip is authentic and verified.";
+        } else {
+            return "Invalid payslip or payslip not found.";
+        }
+    }
+}
